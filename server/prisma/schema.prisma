@@ -1,0 +1,378 @@
+// This is the DEVKIT Prisma schema
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth & Users ─────────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  username      String   @unique
+  passwordHash  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  isAdmin       Boolean  @default(false)
+
+  character     Character?
+  xp            UserXP?
+  streak        Streak?
+  questProgress QuestProgress[]
+  xpHistory     XPTransaction[]
+  badges        UserBadge[]
+  skills        UserSkill[]
+  resourceUnlocks ResourceUnlock[]
+  challengesPosted Challenge[]
+  duelsAsChallenger Duel[] @relation("Challenger")
+  duelsAsOpponent   Duel[] @relation("Opponent")
+  notifications Notification[]
+  ratings       Rating[]
+}
+
+// ─── Character ────────────────────────────────────────────────────────────────
+
+model Character {
+  id            String         @id @default(uuid())
+  userId        String         @unique
+  user          User           @relation(fields: [userId], references: [id])
+  classId       String
+  class         CareerClass    @relation(fields: [classId], references: [id])
+  evolutionStage Int           @default(0) // 0=Newcomer, 1=Recruit, 2=Apprentice, 3=Journeyman, 4=Expert, 5=Master
+  primaryWeaponId  String?
+  secondaryWeaponId String?
+  familiarId    String?
+  createdAt     DateTime       @default(now())
+}
+
+model CareerClass {
+  id          String      @id @default(uuid())
+  name        String      @unique // "Python Developer", "ML Engineer", etc.
+  slug        String      @unique
+  description String
+  icon        String
+  primaryColor String
+  characters  Character[]
+  skillTrees  SkillTree[]
+}
+
+// ─── XP & Progression ─────────────────────────────────────────────────────────
+
+model UserXP {
+  id          String  @id @default(uuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id])
+  totalXP     Int     @default(0)
+  level       Int     @default(1)
+  xpToNext    Int     @default(100)
+}
+
+model XPTransaction {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Int                       // positive = earned, negative = penalty
+  reason    String                    // "quest_complete", "duel_win", "hint_penalty", etc.
+  questId   String?
+  createdAt DateTime @default(now())
+}
+
+model Streak {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  lastActiveAt  DateTime @default(now())
+}
+
+// ─── Badges ───────────────────────────────────────────────────────────────────
+
+model Badge {
+  id            String      @id @default(uuid())
+  name          String      @unique
+  description   String
+  icon          String
+  conditionType String      // "quest_count", "streak_days", "level_reached", "boss_defeated", etc.
+  conditionValue Int
+  users         UserBadge[]
+}
+
+model UserBadge {
+  id       String   @id @default(uuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  badgeId  String
+  badge    Badge    @relation(fields: [badgeId], references: [id])
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
+}
+
+// ─── Subjects & Topics ────────────────────────────────────────────────────────
+
+model Subject {
+  id          String    @id @default(uuid())
+  name        String    @unique // "Python", "JavaScript"
+  slug        String    @unique
+  regionName  String              // "Serpent Valley", "Frontend Shores"
+  regionIcon  String
+  description String
+  isUnlocked  Boolean   @default(false)
+  orderIndex  Int
+  topics      Topic[]
+  skillTree   SkillTree?
+  resources   Resource[]
+  videos      Video[]
+}
+
+model Topic {
+  id          String    @id @default(uuid())
+  subjectId   String
+  subject     Subject   @relation(fields: [subjectId], references: [id])
+  name        String                // "Python Basics", "OOP & Classes"
+  dungeonName String                // "The Burrow", "The Nest"
+  orderIndex  Int
+  isLocked    Boolean   @default(true)
+  quests      Quest[]
+  resources   Resource[]
+}
+
+// ─── Resources & Videos ───────────────────────────────────────────────────────
+
+model Resource {
+  id          String    @id @default(uuid())
+  subjectId   String?
+  subject     Subject?  @relation(fields: [subjectId], references: [id])
+  topicId     String?
+  topic       Topic?    @relation(fields: [topicId], references: [id])
+  title       String
+  url         String
+  type        String    // "article", "course", "documentation", "book", "tool"
+  isPaid      Boolean   @default(false)
+  isLocked    Boolean   @default(true)
+  difficulty  String    // "beginner", "intermediate", "advanced"
+  description String?
+  unlockQuestId String?
+  unlocks     ResourceUnlock[]
+  ratings     Rating[]
+}
+
+model ResourceUnlock {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  resourceId  String
+  resource    Resource @relation(fields: [resourceId], references: [id])
+  unlockedAt  DateTime @default(now())
+  method      String   // "quest_complete", "special_quest"
+
+  @@unique([userId, resourceId])
+}
+
+model Video {
+  id          String   @id @default(uuid())
+  subjectId   String
+  subject     Subject  @relation(fields: [subjectId], references: [id])
+  youtubeId   String
+  title       String
+  channelName String
+  duration    Int                   // seconds
+  difficulty  String
+  isFeatured  Boolean  @default(false)
+  ratings     Rating[]
+}
+
+model Rating {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  resourceId String?
+  resource   Resource? @relation(fields: [resourceId], references: [id])
+  videoId    String?
+  video      Video?    @relation(fields: [videoId], references: [id])
+  score      Int                    // 1–5
+  createdAt  DateTime  @default(now())
+}
+
+// ─── Quests ───────────────────────────────────────────────────────────────────
+
+model Quest {
+  id              String          @id @default(uuid())
+  topicId         String
+  topic           Topic           @relation(fields: [topicId], references: [id])
+  title           String
+  description     String
+  type            String          // "study", "challenge", "boss", "unlock"
+  difficulty      String          // "novice", "apprentice", "journeyman", "expert", "boss"
+  xpReward        Int
+  orderIndex      Int
+  isBoss          Boolean         @default(false)
+  timeLimit       Int?            // seconds (optional)
+  questions       QuestQuestion[]
+  progress        QuestProgress[]
+  materialDrops   QuestMaterialDrop[]
+  unlocksResource String?
+}
+
+model QuestQuestion {
+  id            String   @id @default(uuid())
+  questId       String
+  quest         Quest    @relation(fields: [questId], references: [id])
+  question      String
+  questionType  String   // "mcq", "short_answer", "code_output", "checklist"
+  options       Json?    // array of strings for MCQ
+  correctAnswer String
+  explanation   String?
+  orderIndex    Int
+}
+
+model QuestProgress {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  questId     String
+  quest       Quest     @relation(fields: [questId], references: [id])
+  status      String    @default("locked") // "locked", "available", "in_progress", "completed", "failed"
+  attempts    Int       @default(0)
+  hintsUsed   Int       @default(0)
+  score       Int?      // percentage
+  completedAt DateTime?
+  startedAt   DateTime?
+
+  @@unique([userId, questId])
+}
+
+// ─── Weapons & Crafting ───────────────────────────────────────────────────────
+
+model Weapon {
+  id            String    @id @default(uuid())
+  name          String    @unique  // "Serpent Staff"
+  subjectSlug   String    @unique  // ties weapon to subject
+  type          String             // "staff", "blade", "shield", "tome", "cannon", "gauntlet", "bow"
+  lore          String
+  passiveAbility String
+  activeAbility  String
+  stage1Image   String             // Crude
+  stage2Image   String             // Forged
+  stage3Image   String             // Tempered
+  stage4Image   String             // Legendary
+  craftingMaterials Json           // { syntaxShards: 40, arcanScripts: 8, purecrystals: 3 }
+}
+
+model UserWeapon {
+  id            String   @id @default(uuid())
+  userId        String
+  weaponId      String
+  weapon        Weapon   @relation(fields: [weaponId], references: [id])
+  evolutionStage Int     @default(1)  // 1=Crude, 2=Forged, 3=Tempered, 4=Legendary
+  powerStat     Int      @default(0)
+  resilienceStat Int     @default(0)
+  precisionStat  Int     @default(0)
+  speedStat     Int      @default(0)
+  forgedAt      DateTime @default(now())
+
+  @@unique([userId, weaponId])
+}
+
+model QuestMaterialDrop {
+  id           String @id @default(uuid())
+  questId      String
+  quest        Quest  @relation(fields: [questId], references: [id])
+  materialType String // "syntax_shards", "logic_bolts", "arcane_scripts", "pure_crystals", "battle_scars"
+  amount       Int
+}
+
+model UserMaterial {
+  id           String @id @default(uuid())
+  userId       String
+  materialType String
+  amount       Int    @default(0)
+
+  @@unique([userId, materialType])
+}
+
+// ─── Skill Tree ───────────────────────────────────────────────────────────────
+
+model SkillTree {
+  id        String      @id @default(uuid())
+  subjectId String      @unique
+  subject   Subject     @relation(fields: [subjectId], references: [id])
+  classId   String
+  class     CareerClass @relation(fields: [classId], references: [id])
+  nodes     SkillNode[]
+}
+
+model SkillNode {
+  id          String      @id @default(uuid())
+  treeId      String
+  tree        SkillTree   @relation(fields: [treeId], references: [id])
+  name        String
+  description String
+  icon        String
+  parentId    String?
+  xpRequired  Int         @default(0)
+  positionX   Float       // for rendering position on tree
+  positionY   Float
+  userSkills  UserSkill[]
+}
+
+model UserSkill {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  nodeId      String
+  node        SkillNode @relation(fields: [nodeId], references: [id])
+  unlockedAt  DateTime  @default(now())
+
+  @@unique([userId, nodeId])
+}
+
+// ─── Social: Challenges & Duels ───────────────────────────────────────────────
+
+model Challenge {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  title       String
+  description String
+  subjectSlug String
+  difficulty  String
+  xpReward    Int
+  status      String   @default("open")  // "open", "solved", "closed"
+  createdAt   DateTime @default(now())
+}
+
+model Duel {
+  id           String    @id @default(uuid())
+  challengerId String
+  challenger   User      @relation("Challenger", fields: [challengerId], references: [id])
+  opponentId   String
+  opponent     User      @relation("Opponent", fields: [opponentId], references: [id])
+  questId      String
+  status       String    @default("pending")  // "pending", "active", "completed", "declined"
+  winnerId     String?
+  xpStake      Int       @default(50)
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime?
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // "duel_request", "challenge_solved", "badge_earned", "level_up"
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// Add UserWeapon relation to User

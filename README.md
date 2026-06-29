@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🛠️ DEVKIT — App Repository
+
+> Gamified CSE learning platform. Learn like you're playing. Master like you mean it.
+
+## Repo Structure
+
+```
+devkit-app/
+├── app/                    # Next.js 14 pages (App Router)
+│   ├── (auth)/             # Login, Signup
+│   └── (game)/             # Dashboard, World Map, Quests, Forge, etc.
+├── components/
+│   ├── ui/                 # Reusable UI: Button, Card, Modal, Badge
+│   ├── game/               # Character, Weapon, SkillTree, BossFight, WorldMap
+│   ├── quest/              # QuestCard, MCQ, BossQuestForm
+│   ├── resource/           # ResourceCard, VideoCard
+│   └── layout/             # Navbar, Sidebar, Footer
+├── hooks/                  # Custom React hooks
+├── lib/                    # API client, auth helpers, utils
+├── types/                  # TypeScript interfaces
+├── public/assets/          # Characters, weapons, bosses, world map art
+├── server/                 # Express.js REST API
+│   ├── routes/             # All API route definitions
+│   ├── controllers/        # Business logic handlers
+│   ├── middleware/         # Auth guard, rate limiter, error handler
+│   ├── services/           # XP engine, quest engine, leaderboard, badges
+│   ├── utils/              # Shared helpers
+│   └── prisma/             # schema.prisma — full DB schema
+└── docker-compose.yml      # Local Postgres + Redis
+```
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18+
+- Docker Desktop (for local Postgres + Redis)
+- npm
 
+### 1. Start the database
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker-compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Set up the frontend
+```bash
+npm install
+cp .env.local.example .env.local   # fill in values
+npm run dev                         # runs on http://localhost:3000
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Set up the backend
+```bash
+cd server
+npm install
+cp .env.example .env                # fill in values
+npm run db:migrate                  # run Prisma migrations
+npm run db:seed                     # seed initial data
+npm run dev                         # runs on http://localhost:5000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Open the app
+Visit [http://localhost:3000](http://localhost:3000)
 
-## Learn More
+## Team A Contacts
+- Frontend: Next.js pages in `app/`, components in `components/`
+- Backend: Express API in `server/`
+- DB Schema: `server/prisma/schema.prisma`
+- Connect to AI Service: `server/routes/` → calls `AI_SERVICE_URL`
 
-To learn more about Next.js, take a look at the following resources:
+## Key API Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/signup` | Register user |
+| POST | `/api/auth/login` | Login |
+| GET | `/api/subjects` | All subjects/regions |
+| GET | `/api/quests` | Quest list |
+| POST | `/api/quests/:id/submit` | Submit quest answer |
+| GET | `/api/skill-tree/:subject` | Skill tree data |
+| GET | `/api/leaderboard` | Weekly leaderboard |
+| POST | `/api/duels` | Challenge a user |
+| GET | `/api/characters/:userId` | User character |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment Variables
+Copy `server/.env.example` to `server/.env` and fill in:
+- `DATABASE_URL` — Postgres connection string
+- `REDIS_URL` — Redis connection string
+- `JWT_SECRET` — Secret for signing tokens
+- `AI_SERVICE_URL` — URL of the devkit-ai service
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Reference Files
+The original `learning_platform/` folder contains curated `.md` files with all CSE resources — use these to seed the database.
