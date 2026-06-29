@@ -1,12 +1,9 @@
 const express = require('express');
 const router = express.Router();
-// const { protect } = require('../middleware/auth.middleware');
+const { protect } = require('../middleware/auth.middleware');
+const { createCharacter, getMyCharacter } = require('../controllers/character.controller');
 
-// TODO: Implement character routes
-// GET    /api/character
-// POST   /api/character
-// GET    /api/character/:id
-// PUT    /api/character/:id
-// DELETE /api/character/:id
+router.post('/', protect, createCharacter);
+router.get('/me', protect, getMyCharacter);
 
 module.exports = router;

@@ -1,18 +1,33 @@
-const jwt = require('jsonwebtoken');
+const { verifyAccess } = require('../utils/jwt');
 
+/**
+ * protect — verifies JWT and attaches user payload to req.user
+ */
 const protect = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'Not authenticated' });
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Not authenticated — missing token' });
+  }
+
+  const token = authHeader.split(' ')[1];
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = verifyAccess(token);
     next();
-  } catch {
-    res.status(401).json({ error: 'Invalid token' });
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired — please refresh' });
+    }
+    return res.status(401).json({ error: 'Invalid token' });
   }
 };
 
+/**
+ * adminOnly — must come after protect
+ */
 const adminOnly = (req, res, next) => {
-  if (!req.user?.isAdmin) return res.status(403).json({ error: 'Admins only' });
+  if (!req.user?.isAdmin) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
   next();
 };
 
