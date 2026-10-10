@@ -264,6 +264,7 @@ model Weapon {
   stage3Image   String             // Tempered
   stage4Image   String             // Legendary
   craftingMaterials Json           // { syntaxShards: 40, arcanScripts: 8, purecrystals: 3 }
+  userWeapons       UserWeapon[]   // back-relation required by Prisma
 }
 
 model UserWeapon {

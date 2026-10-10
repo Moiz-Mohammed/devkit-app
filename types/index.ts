@@ -100,3 +100,66 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
+
+// ─── Quests & Curriculum ──────────────────────────────────────────────────────
+
+export interface Subject {
+  id: string;
+  name: string;
+  slug: string;
+  regionName: string;
+  regionIcon: string;
+  description: string;
+  isUnlocked: boolean;
+  orderIndex: number;
+}
+
+export interface Topic {
+  id: string;
+  subjectId: string;
+  name: string;
+  dungeonName: string;
+  orderIndex: number;
+  isLocked: boolean;
+}
+
+export interface MaterialDrop {
+  id: string;
+  materialType: string;
+  amount: number;
+}
+
+export interface Quest {
+  id: string;
+  topicId: string;
+  title: string;
+  description: string;
+  type: 'study' | 'challenge' | 'boss';
+  difficulty: 'novice' | 'apprentice' | 'journeyman' | 'expert' | 'boss';
+  xpReward: number;
+  orderIndex: number;
+  isBoss: boolean;
+  materialDrops?: MaterialDrop[];
+}
+
+export interface QuestQuestion {
+  id: string;
+  questId: string;
+  question: string;
+  questionType: 'mcq' | 'code';
+  options: string[];
+  correctAnswer: string;
+  explanation?: string;
+  orderIndex: number;
+}
+
+export interface QuestProgress {
+  id: string;
+  userId: string;
+  questId: string;
+  status: 'locked' | 'available' | 'in_progress' | 'completed';
+  attempts: number;
+  hintsUsed: number;
+  completedAt?: string;
+}
+

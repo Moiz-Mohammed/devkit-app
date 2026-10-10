@@ -1,31 +1,54 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/lib/AuthContext';
 
 export const metadata: Metadata = {
-  title: { default: 'DEVKIT — Learn like you\'re playing', template: '%s | DEVKIT' },
+  title: {
+    default: 'DEVKIT — Learn to Code Like a Legend',
+    template: '%s | DEVKIT',
+  },
   description:
-    'DEVKIT is a gamified CSE learning platform. Master programming through quests, forge weapons, defeat bosses, and build your developer character.',
-  keywords: ['programming', 'coding', 'learn', 'gamified', 'CSE', 'developer', 'RPG', 'quests'],
+    'Master Computer Science through quests, forge legendary weapons, defeat boss challenges, and become a legendary developer.',
+  keywords: [
+    'learn programming',
+    'coding platform',
+    'gamified learning',
+    'computer science',
+    'Python',
+    'JavaScript',
+    'developer',
+  ],
   authors: [{ name: 'DEVKIT' }],
   openGraph: {
-    title: 'DEVKIT — Learn like you\'re playing',
-    description: 'Gamified CSE learning. Master coding through quests and forge your path.',
+    title: 'DEVKIT — Learn to Code Like a Legend',
+    description:
+      'A gamified Computer Science learning platform. Master code through epic quests.',
     type: 'website',
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const viewport: Viewport = {
+  themeColor: '#0a0a0f',
+  colorScheme: 'dark',
+  width: 'device-width',
+  initialScale: 1,
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      </head>
-      <body>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+      {/*
+        suppressHydrationWarning on body:
+        Grammarly and other browser extensions inject attributes (data-gr-*)
+        into <body> after server render — this silences the false-positive
+        React hydration mismatch.
+      */}
+      <body suppressHydrationWarning>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
